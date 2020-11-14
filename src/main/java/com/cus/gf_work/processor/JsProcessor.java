@@ -39,14 +39,31 @@ public class JsProcessor implements PageProcessor {
     private OssConfig ossConfig;
     private final Site site = Site.me()
             .setDomain(BrowserConstant.JS_DOMAIN)
-            .setSleepTime(100)
+            //超时时间
+            .setTimeOut(10 * 1000)
+            //重试时间
+            .setRetrySleepTime(3000)
+            //重试次数
+            .setRetryTimes(3)
+            .setSleepTime(1000)
             .setUserAgent(BrowserConstant.USER_AGENT);
 
     @Override
     public void process(Page page) {
         List<String> all = page.getHtml().css(".title").links().all();
         if (all.size() > 0) {
-            page.addTargetRequests(all);
+            //标明这是列表页面
+            try {
+                page.addTargetRequests(all);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+//            //将下一页加入page中
+//            NUM += 1;
+//            if (NUM < 20) {
+//                page.addTargetRequest("https://www.jianshu.com/?page=" + NUM);
+//                log.info("开始抓取第:{}页", NUM);
+//            }
         } else {
             handle(page);
         }
@@ -67,10 +84,11 @@ public class JsProcessor implements PageProcessor {
             String title = page.getHtml().$("h1._1RuRku", "text").get();
             String content = getContent(page);
             if (StringUtils.isBlank(content)) {
-                log.info("文章: {}不含图片,已经跳过采集",url);
+                log.info("文章: {}不含图片,已经跳过采集", url);
             } else {
                 page.putField("title", title);
                 page.putField("key", key);
+                page.putField("originalUrl", url);
                 page.putField("content", content);
             }
         } else {
@@ -88,7 +106,7 @@ public class JsProcessor implements PageProcessor {
         Selectable selectable = page.getHtml().xpath("//article[@class='_2rhmJa']");
         //判断是否包含图片，文章不包含图片直接不采集
         String imgTag = selectable.$("img").get();
-        if(StringUtils.isBlank(imgTag)){
+        if (StringUtils.isBlank(imgTag)) {
             return null;
         }
         StringBuilder stringBuilder = new StringBuilder();
@@ -100,8 +118,12 @@ public class JsProcessor implements PageProcessor {
                 if (!(node instanceof TextNode)) {
                     //判断p标签还是img标签
                     if ("p".equals(((Element) node).tagName())) {
-                        String text = ((Element) node).text() + "\n" + "\n";
-                        stringBuilder.append(text);
+                        String text = ((Element) node).text();
+                        //b标签
+                        if (((Element) node).select("b").size() > 0) {
+                            text = "**" + text + "**";
+                        }
+                        stringBuilder.append(text).append("\n").append("\n");
                     } else if ("div".equals(((Element) node).tagName())) {
                         String imgDescription = Jsoup.parse(node.toString()).text();
                         if (StringUtils.isBlank(imgDescription)) {

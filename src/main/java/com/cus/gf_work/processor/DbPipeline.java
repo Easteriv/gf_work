@@ -28,16 +28,18 @@ public class DbPipeline implements Pipeline {
         Object content = resultItems.get("content");
         Object title = resultItems.get("title");
         Object key = resultItems.get("key");
+        Object originalUrl = resultItems.get("originalUrl");
         if (content != null && title != null && key != null) {
             String contentStr = content.toString();
             String titleStr = title.toString();
             String keyStr = key.toString();
+            String originalUrlStr = originalUrl.toString();
             contentStr = "<!--markdown-->" + contentStr;
             //插入数据库
             PostContent postContent = buildPostContent(titleStr, contentStr);
             Boolean isSuccess = postContentService.insertPostFacade(postContent);
             if (isSuccess) {
-                log.info("[{}]插入数据库成功", titleStr);
+                log.info("[{}]插入数据库成功,原文链接:{}", titleStr,originalUrlStr);
                 Boolean isPutSuccess = redisTemplate.opsForHash().putIfAbsent("article", keyStr, "0");
                 if (isPutSuccess) {
                     log.info("[{}]插入redis成功,key is:{}", titleStr, keyStr);
