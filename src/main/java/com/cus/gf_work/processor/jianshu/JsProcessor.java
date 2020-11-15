@@ -17,9 +17,12 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
+import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Site;
+import us.codecraft.webmagic.model.HttpRequestBody;
 import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.Selectable;
+import us.codecraft.webmagic.utils.HttpConstant;
 
 import java.util.*;
 
@@ -41,7 +44,7 @@ public class JsProcessor implements PageProcessor {
     public static List<String> IDS_LIST = new ArrayList<>();
     private static final Integer MAX_GET_PAGE = 3;
     private final Site site = Site.me()
-            .addHeader("Cookie", "_ga=GA1.2.1774951478.1591365670; __yadk_uid=NBlKFuNce4hLeX1bfAgIBrNmwBHNMTfz; __gads=ID=9be5071f9c703d1b:T=1591365681:S=ALNI_MbsuMoX_vM1xNI25z8X67KxayYUzg; _gid=GA1.2.1452606608.1605280548; locale=zh-CN; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605362105,1605369010,1605373229,1605413673; read_mode=day; default_font=font2; web_login_version=MTYwNTQxNzQ0MA%3D%3D--89e2a63b20df64837b1fce22cfe70a3f4c89662a; _m7e_session_core=80d2bf189277583202810457d4f05611; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2225196457%22%2C%22first_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%7D%2C%22%24device_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605417714")
+            .addHeader("Cookie", "_ga=GA1.2.1774951478.1591365670; __yadk_uid=NBlKFuNce4hLeX1bfAgIBrNmwBHNMTfz; __gads=ID=9be5071f9c703d1b:T=1591365681:S=ALNI_MbsuMoX_vM1xNI25z8X67KxayYUzg; _gid=GA1.2.1452606608.1605280548; locale=zh-CN; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605362105,1605369010,1605373229,1605413673; read_mode=day; default_font=font2; web_login_version=MTYwNTQxNzQ0MA%3D%3D--89e2a63b20df64837b1fce22cfe70a3f4c89662a; _m7e_session_core=80d2bf189277583202810457d4f05611; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2225196457%22%2C%22first_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%2C%22%24latest_referrer_host%22%3A%22%22%7D%2C%22%24device_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605426418")
             .setDomain(BrowserConstant.JS_DOMAIN)
             //超时时间
             .setTimeOut(10 * 1000)
@@ -71,8 +74,18 @@ public class JsProcessor implements PageProcessor {
                     log.info("抓取第:{}页数据", START_PAGE);
                 }
             } else {
-                //todo 发起post请求
-
+                START_PAGE += 1;
+                //模拟post请求
+                Request req = new Request();
+                req.setMethod(HttpConstant.Method.POST);
+                req.setUrl("https://www.jianshu.com/trending_notes");
+                //设置MAP参数
+                Map<String, Object> paramMap = new HashMap<>();
+                paramMap.put("page", START_PAGE);
+                //todo 少部分参数
+                req.setRequestBody(HttpRequestBody.form(paramMap, "UTF-8"));
+                page.addTargetRequest(req);
+                log.info("抓取第:{}页数据", START_PAGE);
             }
 
         } else {
@@ -138,6 +151,7 @@ public class JsProcessor implements PageProcessor {
                         //p标签下面的 img 标签
                         if (((Element) node).select("img").size() > 0) {
                             String attr = ((Element) node).select("img").attr("src");
+                            order += 1;
                             setImg(attr, imageUrlMap, order, stringBuilder, "请输入图片描述");
                         }
                         stringBuilder.append(text).append("\n").append("\n");
@@ -150,6 +164,7 @@ public class JsProcessor implements PageProcessor {
                         for (Element imgElement : img) {
                             //图片
                             String imgUrl = imgElement.attr("data-original-src");
+                            order += 1;
                             setImg(imgUrl, imageUrlMap, order, stringBuilder, imgDescription);
                         }
                     }
@@ -162,10 +177,11 @@ public class JsProcessor implements PageProcessor {
 
     /**
      * 根据原来的图片url重新格式化成typecho需要的url格式
-     * @param imgUrl 源url
-     * @param imageUrlMap map容器
-     * @param order 标明图片张数
-     * @param stringBuilder 拼接容器
+     *
+     * @param imgUrl         源url
+     * @param imageUrlMap    map容器
+     * @param order          标明图片张数
+     * @param stringBuilder  拼接容器
      * @param imgDescription 图片描述
      */
     private void setImg(String imgUrl, Map<String, String> imageUrlMap, Integer order, StringBuilder stringBuilder, String imgDescription) {
@@ -178,7 +194,6 @@ public class JsProcessor implements PageProcessor {
             String uploadUrl = OssUtil.upload(url, objectName);
             if (StringUtils.isNotBlank(uploadUrl)) {
                 imageUrlMap.putIfAbsent("imgUrl", uploadUrl);
-                order++;
                 //拼接
                 String des = "![" + imgDescription + "][" + order + "]";
                 stringBuilder.append(des).append("\n").append("\n");
