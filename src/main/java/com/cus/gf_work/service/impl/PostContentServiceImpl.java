@@ -1,15 +1,21 @@
 package com.cus.gf_work.service.impl;
 
+import com.cus.gf_work.dao.Fields;
 import com.cus.gf_work.dao.Metas;
 import com.cus.gf_work.dao.PostContent;
 import com.cus.gf_work.dao.Relationship;
+import com.cus.gf_work.mapper.FieldsMapper;
 import com.cus.gf_work.mapper.MetasMapper;
 import com.cus.gf_work.mapper.PostContentMapper;
 import com.cus.gf_work.mapper.RelationshipMapper;
+import com.cus.gf_work.service.FieldService;
 import com.cus.gf_work.service.PostContentService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 /**
  * @author zhaojiejun
@@ -23,6 +29,10 @@ public class PostContentServiceImpl implements PostContentService {
     private RelationshipMapper relationshipMapper;
     @Autowired
     private MetasMapper metasMapper;
+    @Autowired
+    private FieldService fieldService;
+    @Autowired
+    private FieldsMapper fieldsMapper;
 
     /**
      * 将文章插入数据库
@@ -48,6 +58,35 @@ public class PostContentServiceImpl implements PostContentService {
         Integer count = metas.getCount();
         metas.setCount(++count);
         metasMapper.updateById(metas);
+        //插入fields表
+        Map<String, String> stringStringMap = fieldService.selectMap(cid);
+        String bigImage = postContent.getBigImage();
+        if (StringUtils.isNotBlank(bigImage)) {
+            if (stringStringMap.get("img") == null) {
+                Fields fields = new Fields();
+                fields.setCid(cid);
+                fields.setName("img");
+                fields.setType("str");
+                fields.setStrValue(bigImage);
+                fieldsMapper.insert(fields);
+            }
+            if (stringStringMap.get("bimg") == null) {
+                Fields fields = new Fields();
+                fields.setCid(cid);
+                fields.setName("bimg");
+                fields.setType("str");
+                fields.setStrValue(bigImage);
+                fieldsMapper.insert(fields);
+            }
+        }
+        if (stringStringMap.get("tktit") == null) {
+            Fields fields = new Fields();
+            fields.setCid(cid);
+            fields.setName("tktit");
+            fields.setType("str");
+            fields.setStrValue(postContent.getTitle());
+            fieldsMapper.insert(fields);
+        }
         return true;
     }
 }

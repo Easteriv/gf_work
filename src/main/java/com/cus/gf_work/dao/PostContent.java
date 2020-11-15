@@ -91,8 +91,20 @@ public class PostContent {
      */
     @TableField(value = "allowFeed")
     private String allowFeed;
-
+    /**
+     * 未知
+     */
     private Integer parent;
+    /**
+     * 点赞
+     */
     private Integer agree;
+    /**
+     * 观看次数
+     */
     private Integer views;
+
+
+    @TableField(exist = false)
+    private String bigImage;
 }

@@ -21,8 +21,7 @@ import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 import us.codecraft.webmagic.selector.Selectable;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author zhaojiejun
@@ -37,7 +36,12 @@ public class JsProcessor implements PageProcessor {
     private OSS ossClient;
     @Autowired
     private OssConfig ossConfig;
+
+    private static Integer START_PAGE = 1;
+    public static List<String> IDS_LIST = new ArrayList<>();
+    private static final Integer MAX_GET_PAGE = 3;
     private final Site site = Site.me()
+            .addHeader("Cookie", "_ga=GA1.2.1774951478.1591365670; __yadk_uid=NBlKFuNce4hLeX1bfAgIBrNmwBHNMTfz; __gads=ID=9be5071f9c703d1b:T=1591365681:S=ALNI_MbsuMoX_vM1xNI25z8X67KxayYUzg; _gid=GA1.2.1452606608.1605280548; locale=zh-CN; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605362105,1605369010,1605373229,1605413673; read_mode=day; default_font=font2; web_login_version=MTYwNTQxNzQ0MA%3D%3D--89e2a63b20df64837b1fce22cfe70a3f4c89662a; _m7e_session_core=80d2bf189277583202810457d4f05611; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2225196457%22%2C%22first_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%7D%2C%22%24device_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605417714")
             .setDomain(BrowserConstant.JS_DOMAIN)
             //超时时间
             .setTimeOut(10 * 1000)
@@ -53,17 +57,24 @@ public class JsProcessor implements PageProcessor {
         List<String> all = page.getHtml().css(".title").links().all();
         if (all.size() > 0) {
             //标明这是列表页面
-            try {
-                page.addTargetRequests(all);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
+            page.addTargetRequests(all);
+            List<String> ids = page.getHtml().xpath("//li[@data-note-id]//@data-note-id").all();
+            IDS_LIST.addAll(ids);
+            //判断是否有阅读更多按钮
+            String readMore = page.getHtml().css(".load-more").get();
+            if (StringUtils.isBlank(readMore)) {
+                //添加url
+                if (START_PAGE < MAX_GET_PAGE) {
+                    START_PAGE += 1;
+                    String nextUrl = "https://www.jianshu.com/?" + UrlUtil.buildUrl(IDS_LIST) + "&page=" + START_PAGE;
+                    page.addTargetRequest(nextUrl);
+                    log.info("抓取第:{}页数据", START_PAGE);
+                }
+            } else {
+                //todo 发起post请求
+
             }
-//            //将下一页加入page中
-//            NUM += 1;
-//            if (NUM < 20) {
-//                page.addTargetRequest("https://www.jianshu.com/?page=" + NUM);
-//                log.info("开始抓取第:{}页", NUM);
-//            }
+
         } else {
             handle(page);
         }
@@ -109,6 +120,7 @@ public class JsProcessor implements PageProcessor {
         if (StringUtils.isBlank(imgTag)) {
             return null;
         }
+        Map<String, String> imageUrlMap = new HashMap<>();
         StringBuilder stringBuilder = new StringBuilder();
         Elements elements = Jsoup.parse(selectable.get()).select("article");
         for (Element element : elements) {
@@ -123,6 +135,11 @@ public class JsProcessor implements PageProcessor {
                         if (((Element) node).select("b").size() > 0) {
                             text = "**" + text + "**";
                         }
+                        //p标签下面的 img 标签
+                        if (((Element) node).select("img").size() > 0) {
+                            String attr = ((Element) node).select("img").attr("src");
+                            setImg(attr, imageUrlMap, order, stringBuilder, "请输入图片描述");
+                        }
                         stringBuilder.append(text).append("\n").append("\n");
                     } else if ("div".equals(((Element) node).tagName())) {
                         String imgDescription = Jsoup.parse(node.toString()).text();
@@ -133,29 +150,43 @@ public class JsProcessor implements PageProcessor {
                         for (Element imgElement : img) {
                             //图片
                             String imgUrl = imgElement.attr("data-original-src");
-                            Optional<String> realUrl = UrlUtil.getRealUrl(imgUrl);
-                            if (realUrl.isPresent()) {
-                                String url = realUrl.get();
-                                String filename = StringUtils.substringAfterLast(url, "/");
-                                String objectName = "uPic/" + filename;
-                                //上传oss
-                                String uploadUrl = OssUtil.upload(url, objectName);
-                                if (StringUtils.isNotBlank(uploadUrl)) {
-                                    order++;
-                                    //拼接
-                                    String des = "![" + imgDescription + "][" + order + "]";
-                                    stringBuilder.append(des).append("\n").append("\n");
-                                    // [1]: https://appleid.apple.com/
-                                    String imgLink = "[" + order + "]: " + uploadUrl;
-                                    stringBuilder.append(imgLink).append("\n").append("\n");
-                                }
-                            }
+                            setImg(imgUrl, imageUrlMap, order, stringBuilder, imgDescription);
                         }
                     }
                 }
             }
         }
+        page.putField("bigImgUrl", imageUrlMap.get("imgUrl"));
         return stringBuilder.toString();
+    }
+
+    /**
+     * 根据原来的图片url重新格式化成typecho需要的url格式
+     * @param imgUrl 源url
+     * @param imageUrlMap map容器
+     * @param order 标明图片张数
+     * @param stringBuilder 拼接容器
+     * @param imgDescription 图片描述
+     */
+    private void setImg(String imgUrl, Map<String, String> imageUrlMap, Integer order, StringBuilder stringBuilder, String imgDescription) {
+        Optional<String> realUrl = UrlUtil.getRealUrl(imgUrl);
+        if (realUrl.isPresent()) {
+            String url = realUrl.get();
+            String filename = StringUtils.substringAfterLast(url, "/");
+            String objectName = "uPic/" + filename;
+            //上传oss
+            String uploadUrl = OssUtil.upload(url, objectName);
+            if (StringUtils.isNotBlank(uploadUrl)) {
+                imageUrlMap.putIfAbsent("imgUrl", uploadUrl);
+                order++;
+                //拼接
+                String des = "![" + imgDescription + "][" + order + "]";
+                stringBuilder.append(des).append("\n").append("\n");
+                // [1]: https://appleid.apple.com/
+                String imgLink = "[" + order + "]: " + uploadUrl;
+                stringBuilder.append(imgLink).append("\n").append("\n");
+            }
+        }
     }
 
     @Override

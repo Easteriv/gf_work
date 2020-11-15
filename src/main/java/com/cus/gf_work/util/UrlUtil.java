@@ -2,6 +2,7 @@ package com.cus.gf_work.util;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,5 +22,15 @@ public class UrlUtil {
         } else {
             return Optional.empty();
         }
+    }
+
+    public static String buildUrl(List<String> ids) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String str : ids) {
+            stringBuilder.append("&seen_snote_ids%5B%5D=").append(str);
+        }
+        //删除第一个&符号
+        String s = stringBuilder.toString();
+        return StringUtils.substringAfter(s, "&");
     }
 }

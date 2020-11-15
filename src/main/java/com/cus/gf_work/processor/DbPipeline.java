@@ -34,9 +34,11 @@ public class DbPipeline implements Pipeline {
             String titleStr = title.toString();
             String keyStr = key.toString();
             String originalUrlStr = originalUrl.toString();
+            Object imgObj = resultItems.get("bigImgUrl");
+            String bigImgUrl = String.valueOf(imgObj);
             contentStr = "<!--markdown-->" + contentStr;
             //插入数据库
-            PostContent postContent = buildPostContent(titleStr, contentStr);
+            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl);
             Boolean isSuccess = postContentService.insertPostFacade(postContent);
             if (isSuccess) {
                 log.info("[{}]插入数据库成功,原文链接:{}", titleStr,originalUrlStr);
@@ -50,7 +52,7 @@ public class DbPipeline implements Pipeline {
         }
     }
 
-    private PostContent buildPostContent(String title, String content) {
+    private PostContent buildPostContent(String title, String content,String bigImgUrl) {
         Long time = System.currentTimeMillis() / 1000L;
         double d = Math.random();
         int views = 100 + (int) (d * 100);
@@ -59,6 +61,7 @@ public class DbPipeline implements Pipeline {
                 .modified(time).text(content).order(NumberUtils.INTEGER_ZERO)
                 .authorId(1).type("post").status("publish").commentsNum(NumberUtils.INTEGER_ZERO)
                 .allowComment("1").allowPing("1").allowFeed("1").parent(NumberUtils.INTEGER_ZERO)
-                .views(views).agree(agree).build();
+                .views(views).agree(agree).bigImage(bigImgUrl).
+                        build();
     }
 }
