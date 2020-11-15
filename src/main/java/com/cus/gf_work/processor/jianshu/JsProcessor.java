@@ -1,4 +1,4 @@
-package com.cus.gf_work.processor;
+package com.cus.gf_work.processor.jianshu;
 
 import com.aliyun.oss.OSS;
 import com.cus.gf_work.common.BrowserConstant;

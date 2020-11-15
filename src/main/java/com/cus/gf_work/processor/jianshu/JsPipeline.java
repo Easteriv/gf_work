@@ -1,4 +1,4 @@
-package com.cus.gf_work.processor;
+package com.cus.gf_work.processor.jianshu;
 
 import com.cus.gf_work.dao.PostContent;
 import com.cus.gf_work.service.PostContentService;
@@ -17,7 +17,7 @@ import us.codecraft.webmagic.pipeline.Pipeline;
  **/
 @Service
 @Slf4j
-public class DbPipeline implements Pipeline {
+public class JsPipeline implements Pipeline {
     @Autowired
     private PostContentService postContentService;
     @Autowired
