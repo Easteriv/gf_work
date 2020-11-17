@@ -32,7 +32,7 @@ import java.util.*;
  **/
 @Component
 @Slf4j
-public class JsProcessor implements PageProcessor {
+public class JsCommonProcessor implements PageProcessor {
     @Autowired
     private RedisService redisService;
     @Autowired
@@ -44,8 +44,9 @@ public class JsProcessor implements PageProcessor {
     public static List<String> IDS_LIST = new ArrayList<>();
     private static final Integer MAX_GET_PAGE = 3;
     private final Site site = Site.me()
-            .addHeader("Cookie", "_ga=GA1.2.1774951478.1591365670; __yadk_uid=NBlKFuNce4hLeX1bfAgIBrNmwBHNMTfz; __gads=ID=9be5071f9c703d1b:T=1591365681:S=ALNI_MbsuMoX_vM1xNI25z8X67KxayYUzg; _gid=GA1.2.1452606608.1605280548; locale=zh-CN; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605362105,1605369010,1605373229,1605413673; read_mode=day; default_font=font2; web_login_version=MTYwNTQxNzQ0MA%3D%3D--89e2a63b20df64837b1fce22cfe70a3f4c89662a; _m7e_session_core=80d2bf189277583202810457d4f05611; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2225196457%22%2C%22first_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%2C%22%24latest_referrer_host%22%3A%22%22%7D%2C%22%24device_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605426418")
+            .addHeader("Cookie","_ga=GA1.2.1774951478.1591365670; __yadk_uid=NBlKFuNce4hLeX1bfAgIBrNmwBHNMTfz; __gads=ID=9be5071f9c703d1b:T=1591365681:S=ALNI_MbsuMoX_vM1xNI25z8X67KxayYUzg; read_mode=day; default_font=font2; locale=zh-CN; Hm_lvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605429310,1605429602,1605447339,1605622554; remember_user_token=W1syNTE5NjQ1N10sIiQyYSQxMSR5ajhJMUYxQ1RBUE0wNEZ2N1hWTlpPIiwiMTYwNTYyMjY5OS43NjIzMjkzIl0%3D--a962f13c8e58e7e757699622c141c78d202e7347; web_login_version=MTYwNTYyMjY5OQ%3D%3D--0d4626d67c0c27a7d8468a440d918f784e55f905; _m7e_session_core=ce86b319c58f93268bc1e60e8fa7bb06; sensorsdata2015jssdkcross=%7B%22distinct_id%22%3A%2225196457%22%2C%22first_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_utm_source%22%3A%22desktop%22%2C%22%24latest_utm_medium%22%3A%22index-users%22%2C%22%24latest_referrer_host%22%3A%22%22%7D%2C%22%24device_id%22%3A%2217284c914fe919-03b398592ed8d1-143e6257-1296000-17284c914ffa42%22%7D; Hm_lpvt_0c0e9d9b1e7d617b3e6842e85b9fb068=1605622701")
             .setDomain(BrowserConstant.JS_DOMAIN)
+            .addHeader("X-PJAX","true")
             //超时时间
             .setTimeOut(10 * 1000)
             //重试时间
@@ -64,16 +65,16 @@ public class JsProcessor implements PageProcessor {
             List<String> ids = page.getHtml().xpath("//li[@data-note-id]//@data-note-id").all();
             IDS_LIST.addAll(ids);
             //判断是否有阅读更多按钮
-            String readMore = page.getHtml().css(".load-more").get();
-            if (StringUtils.isBlank(readMore)) {
-                //添加url
-                if (START_PAGE < MAX_GET_PAGE) {
-                    START_PAGE += 1;
-                    String nextUrl = "https://www.jianshu.com/?" + UrlUtil.buildUrl(IDS_LIST) + "&page=" + START_PAGE;
-                    page.addTargetRequest(nextUrl);
-                    log.info("抓取第:{}页数据", START_PAGE);
-                }
-            } else {
+            //String readMore = page.getHtml().css(".load-more").get();
+            //if (StringUtils.isBlank(readMore)) {
+            //添加url
+            if (START_PAGE < MAX_GET_PAGE) {
+                START_PAGE += 1;
+                String nextUrl = "https://www.jianshu.com/?" + UrlUtil.buildUrl(IDS_LIST) + "&page=" + START_PAGE;
+                page.addTargetRequest(nextUrl);
+                log.info("抓取第:{}页数据", START_PAGE);
+                //}
+            } else if(START_PAGE<6){
                 START_PAGE += 1;
                 //模拟post请求
                 Request req = new Request();
@@ -82,12 +83,11 @@ public class JsProcessor implements PageProcessor {
                 //设置MAP参数
                 Map<String, Object> paramMap = new HashMap<>();
                 paramMap.put("page", START_PAGE);
-                //todo 少部分参数
+                paramMap.put("X-PJAX",true);
                 req.setRequestBody(HttpRequestBody.form(paramMap, "UTF-8"));
                 page.addTargetRequest(req);
                 log.info("抓取第:{}页数据", START_PAGE);
             }
-
         } else {
             handle(page);
         }

@@ -1,7 +1,7 @@
 package com.cus.gf_work.controller;
 
-import com.cus.gf_work.processor.jianshu.JsProcessor;
-import com.cus.gf_work.processor.jianshu.JsPipeline;
+import com.cus.gf_work.pipeline.JsPipeline;
+import com.cus.gf_work.processor.jianshu.JsCommonProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,13 +19,16 @@ import us.codecraft.webmagic.Spider;
 public class JsController {
 
     @Autowired
-    private JsProcessor jsProcessor;
+    private JsCommonProcessor jsCommonProcessor;
     @Autowired
     private JsPipeline jsPipeline;
 
+    /**
+     * 从主页抓取
+     */
     @RequestMapping("/homePage")
-    public void test() {
-        Spider spider = Spider.create(jsProcessor);
+    public void homePage() {
+        Spider spider = Spider.create(jsCommonProcessor);
         spider.addUrl("http://www.jianshu.com");
         spider.addPipeline(jsPipeline);
         spider.thread(10);
@@ -33,13 +36,30 @@ public class JsController {
         spider.start();
     }
 
+    /**
+     * 自定义抓取文章页面
+     *
+     * @param id 简书文章唯一标识
+     */
     @RequestMapping("/{id}")
-    public void test(@PathVariable String id) {
-        Spider spider = Spider.create(jsProcessor);
+    public void customId(@PathVariable String id) {
+        Spider spider = Spider.create(jsCommonProcessor);
         spider.addUrl("https://www.jianshu.com/p/" + id);
         spider.addPipeline(jsPipeline);
         spider.thread(10);
         spider.setExitWhenComplete(true);
         spider.start();
+    }
+
+    /**
+     * 简书热门文章抓取
+     */
+    @RequestMapping("/hot")
+    public void hot() {
+
+//        spider.addPipeline(jsPipeline);
+//        spider.thread(10);
+//        spider.setExitWhenComplete(true);
+//        spider.start();
     }
 }

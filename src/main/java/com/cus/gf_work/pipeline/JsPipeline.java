@@ -1,4 +1,4 @@
-package com.cus.gf_work.processor.jianshu;
+package com.cus.gf_work.pipeline;
 
 import com.cus.gf_work.dao.PostContent;
 import com.cus.gf_work.service.PostContentService;
