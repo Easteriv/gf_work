@@ -1,6 +1,6 @@
 package com.cus.gf_work.controller;
 
-import com.cus.gf_work.pipeline.JsPipeline;
+import com.cus.gf_work.pipeline.DbPipeline;
 import com.cus.gf_work.processor.jianshu.JsCommonProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ public class JsController {
     @Autowired
     private JsCommonProcessor jsCommonProcessor;
     @Autowired
-    private JsPipeline jsPipeline;
+    private DbPipeline dbPipeline;
 
     /**
      * 从主页抓取
@@ -30,7 +30,7 @@ public class JsController {
     public void homePage() {
         Spider spider = Spider.create(jsCommonProcessor);
         spider.addUrl("http://www.jianshu.com");
-        spider.addPipeline(jsPipeline);
+        spider.addPipeline(dbPipeline);
         spider.thread(10);
         spider.setExitWhenComplete(true);
         spider.start();
@@ -45,7 +45,7 @@ public class JsController {
     public void customId(@PathVariable String id) {
         Spider spider = Spider.create(jsCommonProcessor);
         spider.addUrl("https://www.jianshu.com/p/" + id);
-        spider.addPipeline(jsPipeline);
+        spider.addPipeline(dbPipeline);
         spider.thread(10);
         spider.setExitWhenComplete(true);
         spider.start();

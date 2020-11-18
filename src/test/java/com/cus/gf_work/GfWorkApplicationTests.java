@@ -14,8 +14,8 @@ class GfWorkApplicationTests {
     @Test
     void contextLoads() {
         // https://www.jianshu.com/p/3f53cc255c3a
-        redisTemplate.opsForHash().delete("article","19c6078d5b06c18d");
-        Object article = redisTemplate.opsForHash().get("article", "19c6078d5b06c18d");
+        redisTemplate.opsForHash().delete("article","53d1bbe398b36e38");
+        Object article = redisTemplate.opsForHash().get("article", "53d1bbe398b36e38");
         System.out.println(article);
     }
 

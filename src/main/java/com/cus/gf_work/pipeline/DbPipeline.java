@@ -17,7 +17,7 @@ import us.codecraft.webmagic.pipeline.Pipeline;
  **/
 @Service
 @Slf4j
-public class JsPipeline implements Pipeline {
+public class DbPipeline implements Pipeline {
     @Autowired
     private PostContentService postContentService;
     @Autowired
@@ -29,6 +29,7 @@ public class JsPipeline implements Pipeline {
         Object title = resultItems.get("title");
         Object key = resultItems.get("key");
         Object originalUrl = resultItems.get("originalUrl");
+        Object tkeyc = resultItems.get("tkeyc");
         if (content != null && title != null && key != null) {
             String contentStr = content.toString();
             String titleStr = title.toString();
@@ -36,9 +37,10 @@ public class JsPipeline implements Pipeline {
             String originalUrlStr = originalUrl.toString();
             Object imgObj = resultItems.get("bigImgUrl");
             String bigImgUrl = String.valueOf(imgObj);
+            String keyWords = String.valueOf(tkeyc);
             contentStr = "<!--markdown-->" + contentStr;
             //插入数据库
-            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl);
+            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl,keyWords);
             Boolean isSuccess = postContentService.insertPostFacade(postContent);
             if (isSuccess) {
                 log.info("[{}]插入数据库成功,原文链接:{}", titleStr,originalUrlStr);
@@ -52,7 +54,7 @@ public class JsPipeline implements Pipeline {
         }
     }
 
-    private PostContent buildPostContent(String title, String content,String bigImgUrl) {
+    private PostContent buildPostContent(String title, String content,String bigImgUrl,String keyWords) {
         Long time = System.currentTimeMillis() / 1000L;
         double d = Math.random();
         int views = 100 + (int) (d * 100);
@@ -62,6 +64,7 @@ public class JsPipeline implements Pipeline {
                 .authorId(1).type("post").status("publish").commentsNum(NumberUtils.INTEGER_ZERO)
                 .allowComment("1").allowPing("1").allowFeed("1").parent(NumberUtils.INTEGER_ZERO)
                 .views(views).agree(agree).bigImage(bigImgUrl).
+                        keyWords(keyWords).
                         build();
     }
 }

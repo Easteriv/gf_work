@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 文章内容表
+ *
  * @author zhaojiejun
  * @date 2020/11/7 10:24 下午
  **/
@@ -23,7 +24,7 @@ public class PostContent {
     /**
      * 文章id
      */
-    @TableId(value = "cid",type = IdType.AUTO)
+    @TableId(value = "cid", type = IdType.AUTO)
     private Integer cid;
     /**
      * 文章标题
@@ -46,12 +47,12 @@ public class PostContent {
      */
     private String text;
     /**
-     * 	排序
+     * 排序
      */
     @TableField("`order`")
     private Integer order;
     /**
-     * 	内容所属用户id
+     * 内容所属用户id
      */
     @TableField(value = "authorId")
     private Integer authorId;
@@ -64,7 +65,7 @@ public class PostContent {
      */
     private String type;
     /**
-     *内容状态
+     * 内容状态
      */
     private String status;
     /**
@@ -87,7 +88,7 @@ public class PostContent {
     @TableField(value = "allowPing")
     private String allowPing;
     /**
-     * 	允许出现在聚合中
+     * 允许出现在聚合中
      */
     @TableField(value = "allowFeed")
     private String allowFeed;
@@ -107,4 +108,6 @@ public class PostContent {
 
     @TableField(exist = false)
     private String bigImage;
+    @TableField(exist = false)
+    private String keyWords;
 }
