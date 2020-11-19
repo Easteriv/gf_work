@@ -1,4 +1,4 @@
-package com.cus.gf_work.processor.huxiu;
+package com.cus.gf_work.processor.guoyans;
 
 import com.aliyun.oss.OSS;
 import com.cus.gf_work.common.BrowserConstant;
@@ -6,6 +6,7 @@ import com.cus.gf_work.config.OssConfig;
 import com.cus.gf_work.service.RedisService;
 import com.cus.gf_work.util.Md5Util;
 import com.cus.gf_work.util.OssUtil;
+import com.cus.gf_work.util.TimeUtil;
 import com.cus.gf_work.util.UrlUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,16 +34,17 @@ import java.util.Optional;
  **/
 @Component
 @Slf4j
-public class HxCommonProcessor implements PageProcessor {
+public class GysCommonProcessor implements PageProcessor {
     @Autowired
     private RedisService redisService;
     @Autowired
     private OSS ossClient;
     @Autowired
     private OssConfig ossConfig;
-
+    private static Integer START_PAGE = 1;
+    private static boolean FLAG = true;
     private final Site site = Site.me()
-            .setDomain(BrowserConstant.HX_DOMAIN)
+            .setDomain(BrowserConstant.GYS_DOMAIN)
             //超时时间
             .setTimeOut(10 * 1000)
             //重试时间
@@ -54,11 +56,13 @@ public class HxCommonProcessor implements PageProcessor {
 
     @Override
     public void process(Page page) {
-        List<String> all = page.getHtml().xpath("//div[@class='article-item']/a").links().all();
-        if (all.size() > 0) {
+        List<String> all = page.getHtml().xpath("//span[@class='entry-title']").links().all();
+        if (all.size() > 0 && FLAG) {
             //标明这是列表页面
             page.addTargetRequests(all);
-            //如果有点击阅读更多，点击按钮
+            log.info("开始抓取第:{}页数据", START_PAGE);
+            START_PAGE += 1;
+            page.addTargetRequest("https://www.guoyanys.com/film/" + START_PAGE + "/");
         } else {
             handle(page);
         }
@@ -75,10 +79,16 @@ public class HxCommonProcessor implements PageProcessor {
         String key = Md5Util.str2Md5(url);
         Boolean present = redisService.isPresent(key);
         if (!present) {
+            //距离超过2天的不需要时间 2020-11-19T14:52:36+08:00
+            String time = page.getHtml().xpath("//time//@datetime").get();
+            String timeStr = StringUtils.substringBeforeLast(time, "T");
+            Boolean isBefore = TimeUtil.isTrue(timeStr, 2L);
+            if (!isBefore) {
+                FLAG = false;
+                log.info("时间:{}超过设定的时间,故不采集", timeStr);
+            }
             //标题
-            String title = page.getHtml().xpath("//h1[@class='article__title']/text()").get();
-            //关键字
-            String keyWords = page.getHtml().xpath("//meta[@name='keyWords']//@content").get();
+            String title = page.getHtml().xpath("//h1[@class='entry-title page-title']/text()").get();
             String content = getContent(page);
             if (StringUtils.isBlank(content)) {
                 log.info("文章: {}不含图片,已经跳过采集", url);
@@ -87,9 +97,8 @@ public class HxCommonProcessor implements PageProcessor {
                 page.putField("key", key);
                 page.putField("originalUrl", url);
                 page.putField("content", content);
-                //关键字
-                page.putField("tkeyc", keyWords);
-                page.putField("mid",2);
+                page.putField("mid", 3);
+                page.putField("tkeyc", "最新电影推荐");
             }
         } else {
             log.info("网页:{}重复，已跳过采集", url);
@@ -103,7 +112,7 @@ public class HxCommonProcessor implements PageProcessor {
      * @return 返回文章内容
      */
     private String getContent(Page page) {
-        Selectable selectable = page.getHtml().xpath("//div[@class='article-detail']");
+        Selectable selectable = page.getHtml().xpath("//div[@class='show_text']//p");
         //判断是否包含图片，文章不包含图片直接不采集
         List<String> imgList = selectable.$("img").all();
         if (CollectionUtils.isEmpty(imgList)) {
@@ -112,45 +121,25 @@ public class HxCommonProcessor implements PageProcessor {
         Map<String, String> imageUrlMap = new HashMap<>();
         int order = 0;
         StringBuilder stringBuilder = new StringBuilder();
-        //如果有头图
-        String topImgUrl = selectable.xpath("//div[@class='top-img']/img/@src").get();
-        if (StringUtils.isNotBlank(topImgUrl)) {
-            //上传
-            setTopImg(topImgUrl, imageUrlMap);
-        }
-        Elements elements = Jsoup.parse(selectable.get()).select(".article__content");
+        Elements elements = Jsoup.parse(selectable.get()).select("p");
         for (Element element : elements) {
             List<Node> nodeList = element.childNodes();
             for (Node node : nodeList) {
-                if (!(node instanceof TextNode)) {
-                    //判断p标签还是img标签
-                    if ("p".equals(((Element) node).tagName())) {
-                        String text = ((Element) node).text();
-                        if (StringUtils.isBlank(text) && ((Element) node).select("br").size() > 0) {
-                            continue;
-                        }
-                        //加粗标签
-                        if (((Element) node).select("strong").size() > 0 || "text-big-title".equals(((Element) node)
-                                .attr("class"))) {
-                            text = "**" + text + "**";
-                        }
-                        //图片解释
-                        if ("text-img-note".equals(((Element) node).attr("class"))) {
-                            continue;
-                        }
-                        //去除版权来源
-                        if (((Element) node).select(".text-remarks").size() > 0 && text.startsWith("本文来自")) {
-                            continue;
-                        }
-                        //p标签下面的 img 标签
-                        if (((Element) node).select("img").size() > 0) {
-                            String attr = ((Element) node).select("img").attr("_src");
-                            order += 1;
-                            setImg(attr, imageUrlMap, order, stringBuilder, "请输入图片描述");
-                        }
-                        stringBuilder.append(text).append("\n").append("\n");
-                    }
+                if (node instanceof TextNode) {
+                    String text = ((TextNode) node).text();
+                    stringBuilder.append(text).append("\n").append("\n");
+                    continue;
                 }
+                if ("br".equals(((Element) node).tagName())) {
+                    stringBuilder.append("\n").append("\n");
+                    continue;
+                }
+                if (((Element) node).select("img").size() > 0) {
+                    String attr = ((Element) node).select("img").attr("src");
+                    order += 1;
+                    setImg(attr, imageUrlMap, order, stringBuilder, "请输入图片描述");
+                }
+
             }
         }
         page.putField("bigImgUrl", imageUrlMap.get("imgUrl"));

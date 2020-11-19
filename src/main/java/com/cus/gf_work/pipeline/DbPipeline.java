@@ -29,8 +29,10 @@ public class DbPipeline implements Pipeline {
         Object title = resultItems.get("title");
         Object key = resultItems.get("key");
         Object originalUrl = resultItems.get("originalUrl");
+        Object mid = resultItems.get("mid");
+        //关键字
         Object tkeyc = resultItems.get("tkeyc");
-        if (content != null && title != null && key != null) {
+        if (content != null && title != null && key != null&&mid!=null) {
             String contentStr = content.toString();
             String titleStr = title.toString();
             String keyStr = key.toString();
@@ -38,9 +40,10 @@ public class DbPipeline implements Pipeline {
             Object imgObj = resultItems.get("bigImgUrl");
             String bigImgUrl = String.valueOf(imgObj);
             String keyWords = String.valueOf(tkeyc);
+            int midStr = (int) mid;
             contentStr = "<!--markdown-->" + contentStr;
             //插入数据库
-            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl,keyWords);
+            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl,keyWords,midStr);
             Boolean isSuccess = postContentService.insertPostFacade(postContent);
             if (isSuccess) {
                 log.info("[{}]插入数据库成功,原文链接:{}", titleStr,originalUrlStr);
@@ -54,7 +57,7 @@ public class DbPipeline implements Pipeline {
         }
     }
 
-    private PostContent buildPostContent(String title, String content,String bigImgUrl,String keyWords) {
+    private PostContent buildPostContent(String title, String content,String bigImgUrl,String keyWords,Integer midStr) {
         Long time = System.currentTimeMillis() / 1000L;
         double d = Math.random();
         int views = 100 + (int) (d * 100);
@@ -64,7 +67,7 @@ public class DbPipeline implements Pipeline {
                 .authorId(1).type("post").status("publish").commentsNum(NumberUtils.INTEGER_ZERO)
                 .allowComment("1").allowPing("1").allowFeed("1").parent(NumberUtils.INTEGER_ZERO)
                 .views(views).agree(agree).bigImage(bigImgUrl).
-                        keyWords(keyWords).
+                        keyWords(keyWords).mid(midStr).
                         build();
     }
 }

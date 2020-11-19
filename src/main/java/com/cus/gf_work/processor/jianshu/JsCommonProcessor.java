@@ -114,6 +114,7 @@ public class JsCommonProcessor implements PageProcessor {
                 page.putField("key", key);
                 page.putField("originalUrl", url);
                 page.putField("content", content);
+                page.putField("mid",2);
             }
         } else {
             log.info("网页:{}重复，已跳过采集", url);

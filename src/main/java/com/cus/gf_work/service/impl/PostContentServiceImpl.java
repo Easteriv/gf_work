@@ -51,7 +51,8 @@ public class PostContentServiceImpl implements PostContentService {
         //插入对应关系 relationShip表
         Relationship relationship = new Relationship();
         relationship.setCid(cid);
-        relationship.setMid(2);
+        //文章分类
+        relationship.setMid(postContent.getMid());
         relationshipMapper.insert(relationship);
         //插入自增数量
         Metas metas = metasMapper.selectById(2);

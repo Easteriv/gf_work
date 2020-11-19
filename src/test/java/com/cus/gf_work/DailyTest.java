@@ -2,8 +2,12 @@ package com.cus.gf_work;
 
 import com.cus.gf_work.util.Md5Util;
 import com.cus.gf_work.util.UrlUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,5 +31,14 @@ public class DailyTest {
         ids.add("1235");
         String s = UrlUtil.buildUrl(ids);
         System.out.println(s);
+    }
+    @Test
+    public void testTime(){
+        String time = "2020-11-19T14:52:36+08:00";
+        String timeStr = StringUtils.substringBeforeLast(time, "T");
+        System.out.println(timeStr);
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate parse = LocalDate.parse(timeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        System.out.println("相差"+(LocalDate.now().toEpochDay()-parse.toEpochDay()));
     }
 }

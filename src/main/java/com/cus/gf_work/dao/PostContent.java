@@ -108,6 +108,10 @@ public class PostContent {
 
     @TableField(exist = false)
     private String bigImage;
+
     @TableField(exist = false)
     private String keyWords;
+
+    @TableField(exist = false)
+    private Integer mid;
 }
