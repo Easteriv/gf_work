@@ -22,6 +22,17 @@ public class HxController {
     @Autowired
     private DbPipeline dbPipeline;
 
+
+    @RequestMapping("/homePage")
+    public void homePage() {
+        Spider spider = Spider.create(hxCommonProcessor);
+        spider.addUrl("https://www.huxiu.com/");
+        spider.addPipeline(dbPipeline);
+        spider.thread(10);
+        spider.setExitWhenComplete(true);
+        spider.start();
+    }
+
     @RequestMapping("/{id}")
     public void customId(@PathVariable String id) {
         Spider spider = Spider.create(hxCommonProcessor);

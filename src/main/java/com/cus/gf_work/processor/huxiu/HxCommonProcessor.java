@@ -54,7 +54,14 @@ public class HxCommonProcessor implements PageProcessor {
 
     @Override
     public void process(Page page) {
-        handle(page);
+        List<String> all = page.getHtml().xpath("//div[@class='article-item']/a").links().all();
+        if (all.size() > 0) {
+            //标明这是列表页面
+            page.addTargetRequests(all);
+            //如果有点击阅读更多，点击按钮
+        } else {
+            handle(page);
+        }
     }
 
     /**
