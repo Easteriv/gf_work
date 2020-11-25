@@ -82,7 +82,7 @@ public class GysCommonProcessor implements PageProcessor {
             //距离超过2天的不需要时间 2020-11-19T14:52:36+08:00
             String time = page.getHtml().xpath("//time//@datetime").get();
             String timeStr = StringUtils.substringBeforeLast(time, "T");
-            Boolean isBefore = TimeUtil.isTrue(timeStr, 2L);
+            Boolean isBefore = TimeUtil.isTrue(timeStr, 1L);
             if (!isBefore) {
                 FLAG = false;
                 log.info("时间:{}超过设定的时间,故不采集", timeStr);
@@ -112,7 +112,7 @@ public class GysCommonProcessor implements PageProcessor {
      * @return 返回文章内容
      */
     private String getContent(Page page) {
-        Selectable selectable = page.getHtml().xpath("//div[@class='show_text']//p");
+        Selectable selectable = page.getHtml().xpath("//div[@class='show_text']");
         //判断是否包含图片，文章不包含图片直接不采集
         List<String> imgList = selectable.$("img").all();
         if (CollectionUtils.isEmpty(imgList)) {
@@ -127,6 +127,10 @@ public class GysCommonProcessor implements PageProcessor {
             for (Node node : nodeList) {
                 if (node instanceof TextNode) {
                     String text = ((TextNode) node).text();
+                    //长度小于20个字，加粗
+                    if(text.length()<=20){
+                        text = "**" + text + "**";
+                    }
                     stringBuilder.append(text).append("\n").append("\n");
                     continue;
                 }

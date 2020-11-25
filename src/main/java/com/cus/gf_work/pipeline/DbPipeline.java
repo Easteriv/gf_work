@@ -3,6 +3,7 @@ package com.cus.gf_work.pipeline;
 import com.cus.gf_work.dao.PostContent;
 import com.cus.gf_work.service.PostContentService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -32,21 +33,25 @@ public class DbPipeline implements Pipeline {
         Object mid = resultItems.get("mid");
         //关键字
         Object tkeyc = resultItems.get("tkeyc");
-        if (content != null && title != null && key != null&&mid!=null) {
+        if (content != null && title != null && key != null && mid != null) {
             String contentStr = content.toString();
             String titleStr = title.toString();
             String keyStr = key.toString();
             String originalUrlStr = originalUrl.toString();
             Object imgObj = resultItems.get("bigImgUrl");
             String bigImgUrl = String.valueOf(imgObj);
+            if (StringUtils.isBlank(bigImgUrl)) {
+                log.error("文章:{}因没有图片已经跳过采集，原文地址:{},请注意查看采集规则是否存在问题",title,originalUrlStr);
+                return;
+            }
             String keyWords = String.valueOf(tkeyc);
             int midStr = (int) mid;
             contentStr = "<!--markdown-->" + contentStr;
             //插入数据库
-            PostContent postContent = buildPostContent(titleStr, contentStr,bigImgUrl,keyWords,midStr);
+            PostContent postContent = buildPostContent(titleStr, contentStr, bigImgUrl, keyWords, midStr);
             Boolean isSuccess = postContentService.insertPostFacade(postContent);
             if (isSuccess) {
-                log.info("[{}]插入数据库成功,原文链接:{}", titleStr,originalUrlStr);
+                log.info("[{}]插入数据库成功,原文链接:{}", titleStr, originalUrlStr);
                 Boolean isPutSuccess = redisTemplate.opsForHash().putIfAbsent("article", keyStr, "0");
                 if (isPutSuccess) {
                     log.info("[{}]插入redis成功,key is:{}", titleStr, keyStr);
@@ -57,11 +62,10 @@ public class DbPipeline implements Pipeline {
         }
     }
 
-    private PostContent buildPostContent(String title, String content,String bigImgUrl,String keyWords,Integer midStr) {
+    private PostContent buildPostContent(String title, String content, String bigImgUrl, String keyWords, Integer midStr) {
         Long time = System.currentTimeMillis() / 1000L;
-        double d = Math.random();
-        int views = 100 + (int) (d * 100);
-        int agree = (int) (d * 10);
+        int views = 0;
+        int agree = 0;
         return PostContent.builder().title(title).created(time)
                 .modified(time).text(content).order(NumberUtils.INTEGER_ZERO)
                 .authorId(1).type("post").status("publish").commentsNum(NumberUtils.INTEGER_ZERO)

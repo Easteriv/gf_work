@@ -88,7 +88,7 @@ public class PostContentServiceImpl implements PostContentService {
             fields.setStrValue(postContent.getTitle());
             fieldsMapper.insert(fields);
         }
-        if (stringStringMap.get("tkeyc") == null) {
+        if (stringStringMap.get("tkeyc") == null&&StringUtils.isNotBlank(postContent.getKeyWords())) {
             Fields fields = new Fields();
             fields.setCid(cid);
             fields.setName("tkeyc");
